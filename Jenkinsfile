@@ -5,7 +5,8 @@
  */
 
 /*
- * Copyright 2021 Joyent, Inc.
+ * Copyright 2022 Joyent, Inc.
+ * Copyright 2025 MNX Cloud, Inc.
  */
 
 @Library('jenkins-joylib@v1.0.8') _
@@ -13,7 +14,7 @@
 pipeline {
 
     agent {
-        label joyCommonLabels(image_ver: '19.4.0')
+        label joyCommonLabels(image_ver: '21.4.0', pi:'20210826T002459Z')
     }
 
     options {
@@ -54,7 +55,7 @@ pipeline {
 
     post {
         always {
-            joySlackNotifications(channel: 'jenkins')
+            joySlackNotifications()
         }
     }
 

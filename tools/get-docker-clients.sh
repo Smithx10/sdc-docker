@@ -7,6 +7,7 @@
 
 #
 # Copyright 2016, Joyent, Inc.
+# Copyright 2024 MNX Cloud, Inc.
 #
 
 #
@@ -42,7 +43,7 @@ set -o nounset
 # ---- globals
 
 # Note: Should keep this in sync with "DOCKER_AVAILABLE_CLI_VERIONS"
-# https://github.com/joyent/sdc-docker/blob/master/test/runtest.common#L54
+# https://github.com/TritonDataCenter/sdc/sdc-docker/blob/master/test/runtest.common#L54
 DEFAULT_VERS="1.12.2 1.11.1 1.10.3 1.9.1 1.8.3"
 
 WRKDIR=/var/tmp/tmp.get-docker-clients
@@ -108,7 +109,7 @@ function get_docker_debug_client
     local name=docker-$ver-debug
     local mdir=/Joyent_Dev/public/docker/docker_debug
     local mpath=$mdir/docker-$ver-$OS-$ARCH-debug
-    local murl=https://us-east.manta.joyent.com$mpath
+    local murl=https://us-central.manta.mnx.io$mpath
 
     if [[ -f $DSTDIR/$name ]]; then
         echo "# Already have $name"
