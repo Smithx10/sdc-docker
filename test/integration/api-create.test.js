@@ -1095,7 +1095,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         });
     });
 
-    // Fail to privision when there is no owner
+    // Fail to provision when there is no owner
     tt.test('run with assigned ipv4 address no owner', function (t) {
         var expectedErr = '(Validation) triton.network.public_ipv4 label '
           + 'requires network ownership';
@@ -1121,7 +1121,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }
     });
 
-    // privision when there is correct owner
+    // provision when there is correct owner
     tt.test('run with assigned ipv4 address with correct owner', function (t) {
         var assignedAddr = '10.0.21.200';
         h.createDockerContainer({
@@ -1158,7 +1158,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }
     });
 
-    // fail to privision when there is incorrect owner
+    // fail to provision when there is incorrect owner
     tt.test('run with assigned ipv4 address with incorrect owner', function (t) {
         var assignedAddr = '10.0.41.200';
         var expectedErr = '(Error) network sdcdockertest_apicreate_external_bob0 '
@@ -1185,7 +1185,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }
     });
 
-    // privision when there is multiple ip on same network
+    // provision when there is multiple ip on same network
     // with correct owner
     tt.test('run with assigned ipv4 address with multiple ip ' +
         'on same network with correct owner', function (t) {
@@ -1238,7 +1238,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }
     });
 
-    // privision when there is multiple ip on different networks
+    // provision when there is multiple ip on different networks
     // with correct owner
     tt.test('run with assigned ipv4 address with multiple ip ' +
         'on different networks with correct owners', function (t) {
@@ -1291,7 +1291,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }
     });
 
-    // fail to privision when there is multiple ip on different networks
+    // fail to provision when there is multiple ip on different networks
     // with incorrect owners
     tt.test('fail to run with assigned ipv4 address with multiple ip ' +
         'on different networks with incorrect owner and correct owner', function (t) {
