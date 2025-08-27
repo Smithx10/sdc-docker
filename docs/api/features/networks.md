@@ -55,8 +55,8 @@ of `-p` or `-P` to get the public NIC.
 
 The external network ipv4 address used by a container can be changed by setting
 the `triton.network.public_ipv4` label to the desired ipv4 address that is
-available in the `triton.network.public` network.  The account must be set
-as an owner on `triton.network.public` network.
+available in the `triton.network.public` network.  The account must
+be set as an owner on the `triton.network.public` network.
 
 ## Related
 
