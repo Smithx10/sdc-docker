@@ -1144,7 +1144,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
             var extNic = nics[0];
             if (FABRICS) {
                 extNic = (nics[0].primary === true ? nics[0] : nics[1]);
-                t.equal(nics.length, 2, 'one nics');
+                t.equal(nics.length, 2, 'two nics');
             } else {
                 t.equal(nics.length, 1, 'one nic');
             }
