@@ -1140,10 +1140,14 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
 
         function oncreate(err, result) {
             assert.strictEqual(err, null);
-            var extNic;
             var nics = result.vm.nics;
-            t.equal(nics.length, 2, 'two nics');
-            extNic = (nics[0].nic_tag === 'external' ? nics[0] : nics[1]);
+            var extNic = nics[0];
+            if (FABRICS) {
+                extNic = (nics[0].primary === true ? nics[0] : nics[1]);
+                t.equal(nics.length, 2, 'one nics');
+            } else {
+                t.equal(nics.length, 1, 'one nic');
+            }
             t.equal(extNic.ip, assignedAddr, 'correct external ip')
             DOCKER_ALICE.del('/containers/' + result.id + '?force=1', ondelete);
         }
@@ -1179,13 +1183,17 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
             assert.object(err, 'err');
             t.end();
         }
-
     });
 
     // privision when there is multiple ip on same network
     // with correct owner
     tt.test('run with assigned ipv4 address with multiple ip ' +
         'on same network with correct owner', function (t) {
+        if (!FABRICS) {
+            t.skip('sdc-docker without fabrics currently do ' +
+                'not support multiple networks')
+            return t.end()
+        }
         var assignedAddrLabel = '10.0.21.200';
         var assignedAddrClient = '10.0.21.201';
         var EndpointsConfig = {};
@@ -1234,6 +1242,11 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
     // with correct owner
     tt.test('run with assigned ipv4 address with multiple ip ' +
         'on different networks with correct owners', function (t) {
+        if (!FABRICS) {
+            t.skip('sdc-docker without fabrics currently do ' +
+                'not support multiple networks')
+            return t.end()
+        }
         var assignedAddrLabel = '10.0.21.200';
         var assignedAddrClient = '10.0.31.200';
         var EndpointsConfig = {};
@@ -1282,6 +1295,11 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
     // with incorrect owners
     tt.test('fail to run with assigned ipv4 address with multiple ip ' +
         'on different networks with incorrect owner and correct owner', function (t) {
+        if (!FABRICS) {
+            t.skip('sdc-docker without fabrics currently do ' +
+                'not support multiple networks')
+            return t.end()
+        }
         var expectedErr = '(Error) network sdcdockertest_apicreate_external_bob0 '
           + 'not found';
         var assignedAddrLabel = '10.0.21.200';
