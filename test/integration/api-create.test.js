@@ -6,6 +6,7 @@
 
 /*
  * Copyright 2017, Joyent, Inc.
+ * Copyright 2025, Bruce Smith
  */
 
 /*
@@ -44,8 +45,6 @@ var FABRICS = false;
 
 
 // --- Tests
-
-
 test('setup', function (tt) {
 
     tt.test('docker env', function (t) {
@@ -1051,54 +1050,58 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
     });
 
     // This network will have the correct owner
-    tt.test('add another external network with correct alice owner', function (t) {
-        // create a new one.
-        var nwUuid = libuuid.create();
-        var nwParams = {
-            name: 'sdcdockertest_apicreate_external_alice1',
-            nic_tag: 'external',
-            subnet: '10.0.31.0/24',
-            provision_start_ip: '10.0.31.2',
-            provision_end_ip: '10.0.31.254',
-            uuid: nwUuid,
-            vlan_id: 5,
-            gateway: '10.0.31.1',
-            resolvers: ['8.8.8.8', '8.8.4.4'],
-            owner_uuids: [ALICE.account.uuid]
-        };
-        h.getOrCreateExternalNetwork(NAPI, nwParams, function (err, network) {
-            t.ifErr(err, 'getOrCreateExternalNetwork');
-            anotherExternalNetworkOwner = network;
-            t.end();
-        });
+    tt.test('add another external network with correct alice owner',
+        function (t) {
+            // create a new one.
+            var nwUuid = libuuid.create();
+            var nwParams = {
+                name: 'sdcdockertest_apicreate_external_alice1',
+                nic_tag: 'external',
+                subnet: '10.0.31.0/24',
+                provision_start_ip: '10.0.31.2',
+                provision_end_ip: '10.0.31.254',
+                uuid: nwUuid,
+                vlan_id: 5,
+                gateway: '10.0.31.1',
+                resolvers: ['8.8.8.8', '8.8.4.4'],
+                owner_uuids: [ALICE.account.uuid]
+            };
+            h.getOrCreateExternalNetwork(NAPI, nwParams,
+                function (err, network) {
+                    t.ifErr(err, 'getOrCreateExternalNetwork');
+                    anotherExternalNetworkOwner = network;
+                    t.end();
+            });
     });
     // This network will have the incorrect owner
-    tt.test('add another external network with incorrect bob owner', function (t) {
-        // create a new one.
-        var nwUuid = libuuid.create();
-        var nwParams = {
-            name: 'sdcdockertest_apicreate_external_bob0',
-            nic_tag: 'external',
-            subnet: '10.0.41.0/24',
-            provision_start_ip: '10.0.41.2',
-            provision_end_ip: '10.0.41.254',
-            uuid: nwUuid,
-            vlan_id: 5,
-            gateway: '10.0.41.1',
-            resolvers: ['8.8.8.8', '8.8.4.4'],
-            owner_uuids: [BOB.account.uuid]
-        };
-        h.getOrCreateExternalNetwork(NAPI, nwParams, function (err, network) {
-            t.ifErr(err, 'getOrCreateExternalNetwork');
-            externalNetworkWrongOwner = network;
-            t.end();
-        });
+    tt.test('add another external network with incorrect bob owner',
+        function (t) {
+            // create a new one.
+            var nwUuid = libuuid.create();
+            var nwParams = {
+                name: 'sdcdockertest_apicreate_external_bob0',
+                nic_tag: 'external',
+                subnet: '10.0.41.0/24',
+                provision_start_ip: '10.0.41.2',
+                provision_end_ip: '10.0.41.254',
+                uuid: nwUuid,
+                vlan_id: 5,
+                gateway: '10.0.41.1',
+                resolvers: ['8.8.8.8', '8.8.4.4'],
+                owner_uuids: [BOB.account.uuid]
+            };
+            h.getOrCreateExternalNetwork(NAPI, nwParams,
+                function (err, network) {
+                    t.ifErr(err, 'getOrCreateExternalNetwork');
+                    externalNetworkWrongOwner = network;
+                    t.end();
+            });
     });
 
     // Fail to provision when there is no owner
     tt.test('run with assigned ipv4 address no owner', function (t) {
         var expectedErr = '(Validation) triton.network.public_ipv4 label '
-          + 'requires network ownership';
+            + 'requires network ownership';
         h.createDockerContainer({
             vmapiClient: VMAPI,
             dockerClient: DOCKER_ALICE,
@@ -1153,16 +1156,64 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }
 
         function ondelete(err) {
-            t.ifErr(err, 'delete external triton.network.public_ipv4 testing container');
+            t.ifErr(err, 'delete external triton.network.public_ipv4 '
+                + 'testing container');
+            t.end();
+        }
+    });
+
+    // provision when there is correct owner publish false single network
+    tt.test('run with assigned ipv4 address with correct owner', function (t) {
+        var assignedAddr = '10.0.21.200';
+        // With Non Fabrics this will deploy a single network dictated by
+        // the triton.network.public without exposed ports
+        var expectedErr = null;
+        // With Fabrics this is an error due to DOCKER-1045.
+        if (FABRICS) {
+        expectedErr = '(Validation) triton.network.public label requires a '
+            + 'container with published ports'
+        }
+        h.createDockerContainer({
+            vmapiClient: VMAPI,
+            dockerClient: DOCKER_ALICE,
+            test: t,
+            expectedErr: expectedErr,
+            extra: {
+                'HostConfig.PublishAllPorts': false,
+                Labels: {
+                    'triton.network.public': externalNetworkOwner.name,
+                    'triton.network.public_ipv4': assignedAddr
+                }
+            },
+            start: true
+        }, oncreate);
+
+        function oncreate(err, result) {
+            if (FABRICS) {
+                assert.object(err, 'err');
+                t.end();
+                return;
+            }
+            assert.strictEqual(err, null);
+            var nics = result.vm.nics;
+            var extNic = nics[0];
+            t.equal(extNic.ip, assignedAddr, 'correct external ip')
+            DOCKER_ALICE.del('/containers/' + result.id + '?force=1', ondelete);
+        }
+
+        function ondelete(err) {
+            t.ifErr(err, 'delete external triton.network.public_ipv4 '
+                + 'testing container');
             t.end();
         }
     });
 
     // fail to provision when there is incorrect owner
-    tt.test('run with assigned ipv4 address with incorrect owner', function (t) {
+    tt.test('fail to run with assigned ipv4 address with incorrect owner',
+        function (t) {
         var assignedAddr = '10.0.41.200';
-        var expectedErr = '(Error) network sdcdockertest_apicreate_external_bob0 '
-          + 'not found';
+        var expectedErr = '(Error) network '
+            + 'sdcdockertest_apicreate_external_bob0 not found';
         h.createDockerContainer({
             vmapiClient: VMAPI,
             dockerClient: DOCKER_ALICE,
@@ -1185,17 +1236,14 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }
     });
 
-    // provision when there is multiple ip on same network
+    // fail to provision when there is multiple ip on same network
     // with correct owner
-    tt.test('run with assigned ipv4 address with multiple ip ' +
-        'on same network with correct owner', function (t) {
-        if (!FABRICS) {
-            t.skip('sdc-docker without fabrics currently do ' +
-                'not support multiple networks')
-            return t.end()
-        }
+    tt.test('fail run with assigned ipv4 address with multiple ip '
+        + 'on same network with correct owner', function (t) {
         var assignedAddrLabel = '10.0.21.200';
         var assignedAddrClient = '10.0.21.201';
+        var expectedErr = format('(Validation) both networks are of uuid: %s, '
+            + 'networks must be distinct', externalNetworkOwner.uuid);
         var EndpointsConfig = {};
         EndpointsConfig[externalNetworkOwner.name] = {
             IPAMConfig: {
@@ -1206,6 +1254,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
             vmapiClient: VMAPI,
             dockerClient: DOCKER_ALICE,
             test: t,
+            expectedErr: expectedErr,
             extra: {
                 'HostConfig.PublishAllPorts': true,
                 'HostConfig.NetworkMode': externalNetworkOwner.name,
@@ -1219,34 +1268,57 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }, oncreate);
 
         function oncreate(err, result) {
-            assert.strictEqual(err, null);
-            var nics = result.vm.nics;
-            t.equal(nics.length, 2, 'two nics');
-            nics.forEach(function(nic){
-                if (nic.primary) {
-                    t.equal(nic.ip, assignedAddrLabel)
-                } else {
-                    t.equal(nic.ip, assignedAddrClient)
-                }
-            });
-            DOCKER_ALICE.del('/containers/' + result.id + '?force=1', ondelete);
+            assert.object(err, 'err');
+            t.end();
         }
+    });
 
-        function ondelete(err) {
-            t.ifErr(err, 'delete external triton.network.public_ipv4 testing container');
+    // fail to provision when there is multiple ip on different networks
+    // with correct owner without published ports
+    tt.test('fail to run with assigned ipv4 address with multiple ip '
+        + 'on different networks with correct owners without published '
+        + 'ports', function (t) {
+        var assignedAddrLabel = '10.0.21.200';
+        var assignedAddrClient = '10.0.31.200';
+        var expectedErr = format('(Validation) non fabrics with 2 '
+            + 'networks requires a container with published ports');
+        if (FABRICS) {
+            var expectedErr = format('(Validation) triton.network.'
+                + 'public label requires a container with published ports');
+        }
+        var EndpointsConfig = {};
+        EndpointsConfig[anotherExternalNetworkOwner.name] = {
+            IPAMConfig: {
+                IPv4Address: assignedAddrClient
+            }
+        }
+        h.createDockerContainer({
+            vmapiClient: VMAPI,
+            dockerClient: DOCKER_ALICE,
+            test: t,
+            expectedErr: expectedErr,
+            extra: {
+                'HostConfig.PublishAllPorts': false,
+                'HostConfig.NetworkMode': anotherExternalNetworkOwner.name,
+                Labels: {
+                    'triton.network.public': externalNetworkOwner.name,
+                    'triton.network.public_ipv4': assignedAddrLabel
+                },
+                'NetworkingConfig.EndpointsConfig': EndpointsConfig
+            },
+            start: true
+        }, oncreate);
+
+        function oncreate(err, result) {
+            assert.object(err, 'err');
             t.end();
         }
     });
 
     // provision when there is multiple ip on different networks
     // with correct owner
-    tt.test('run with assigned ipv4 address with multiple ip ' +
-        'on different networks with correct owners', function (t) {
-        if (!FABRICS) {
-            t.skip('sdc-docker without fabrics currently do ' +
-                'not support multiple networks')
-            return t.end()
-        }
+    tt.test('run with assigned ipv4 address with multiple ip '
+        + 'on different networks with correct owners', function (t) {
         var assignedAddrLabel = '10.0.21.200';
         var assignedAddrClient = '10.0.31.200';
         var EndpointsConfig = {};
@@ -1275,7 +1347,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
             assert.strictEqual(err, null);
             var nics = result.vm.nics;
             t.equal(nics.length, 2, 'two nics');
-            nics.forEach(function(nic){
+            nics.forEach(function (nic) {
                 if (nic.primary) {
                     t.equal(nic.ip, assignedAddrLabel)
                 } else {
@@ -1286,22 +1358,19 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
         }
 
         function ondelete(err) {
-            t.ifErr(err, 'delete external triton.network.public_ipv4 testing container');
+            t.ifErr(err, 'delete external triton.network.public_ipv4 testing'
+                + 'container');
             t.end();
         }
     });
 
     // fail to provision when there is multiple ip on different networks
     // with incorrect owners
-    tt.test('fail to run with assigned ipv4 address with multiple ip ' +
-        'on different networks with incorrect owner and correct owner', function (t) {
-        if (!FABRICS) {
-            t.skip('sdc-docker without fabrics currently do ' +
-                'not support multiple networks')
-            return t.end()
-        }
-        var expectedErr = '(Error) network sdcdockertest_apicreate_external_bob0 '
-          + 'not found';
+    tt.test('fail to run with assigned ipv4 address with multiple ip '
+        + 'on different networks with incorrect owner and correct owner',
+        function (t) {
+        var expectedErr = '(Error) network '
+            + 'sdcdockertest_apicreate_external_bob0 not found';
         var assignedAddrLabel = '10.0.21.200';
         var assignedAddrClient = '10.0.41.200';
         var EndpointsConfig = {};
@@ -1344,7 +1413,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
             anotherExternalNetworkOwner
         ];
 
-        cleanupNetworks.forEach(function(network){
+        cleanupNetworks.forEach(function (network) {
             NAPI.deleteNetwork(network.uuid, function (err) {
                 t.ifErr(err, 'external network deletion');
             });
