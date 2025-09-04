@@ -7,6 +7,7 @@
 /*
  * Copyright (c) 2018, Joyent, Inc.
  * Copyright 2022 MNX Cloud, Inc.
+ * Copyright 2025, Bruce Smith
  */
 
 /*
