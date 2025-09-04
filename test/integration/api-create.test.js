@@ -993,7 +993,7 @@ test('run external network (docker run --label triton.network.public=)',
 });
 
 /*
- * Tests for `docker run --label trtiton.network.public_ipv4`
+ * Tests for `docker run --label triton.network.public_ipv4`
  *
  * TRITON-2497 Add static addresses to public networks
  */
@@ -1099,7 +1099,7 @@ test('run external network (docker run --label triton.network.public_ipv4=)',
     });
 
     // Fail to provision when there is no owner
-    tt.test('run with assigned ipv4 address no owner', function (t) {
+    tt.test('fail to run with assigned ipv4 address no owner', function (t) {
         var expectedErr = '(Validation) triton.network.public_ipv4 label '
             + 'requires network ownership';
         h.createDockerContainer({
