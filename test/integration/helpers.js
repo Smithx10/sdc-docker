@@ -1771,7 +1771,7 @@ function createDockerContainer(opts, callback) {
             'RestartPolicy': {
                 'Name': '',
                 'MaximumRetryCount': 0
-            },
+            }
         },
         'NetworkingConfig': {
             'EndpointsConfig': {}
